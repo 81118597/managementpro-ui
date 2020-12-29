@@ -7,3 +7,11 @@ export function Userlist (page, limit) {
     method: 'get'
   })
 }
+// 用户信息
+export function getuserList (SysUserQuery) {
+  return request({
+    url: `api/user/getuserList`,
+    method: 'post',
+    data:SysUserQuery
+  })
+}

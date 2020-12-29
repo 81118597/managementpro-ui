@@ -56,8 +56,7 @@
         style="padding: 30px 0;text-align: center"
         :total="total"
         @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      >
+        @current-change="handleCurrentChange">
       </el-pagination>
       <!--新增部门弹框-->
       <el-dialog :title="deptDialogTitle" :visible.sync="dialogVisible" width="30%">

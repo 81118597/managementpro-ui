@@ -11,13 +11,13 @@
       <el-form size="mini" :model="searchForm" ref="form" label-width="80px">
         <el-row>
           <el-col :span="5">
-            <el-form-item label="名称">
+            <el-form-item label="用户名">
               <el-input v-model="searchForm.username"></el-input>
             </el-form-item>
           </el-col>
           <el-col :span="5">
             <el-form-item label="电话">
-              <el-input v-model="searchForm.phone"></el-input>
+              <el-input v-model="searchForm.mobile"></el-input>
             </el-form-item>
           </el-col>
           <el-col :span="5">
@@ -25,7 +25,7 @@
               <el-input v-model="searchForm.email"></el-input>
             </el-form-item>
           </el-col>
-          <el-button style="margin-left:20px;" size="mini" type="primary" icon="el-icon-search">查询</el-button>
+          <el-button style="margin-left:20px;" size="mini" type="primary" icon="el-icon-search" @click="query">查询</el-button>
           <el-button size="mini" type="primary" icon="el-icon-plus" @click="addUser">新增</el-button>
         </el-row>
       </el-form>
@@ -35,18 +35,32 @@
         border
         style="width: 100%">
         <el-table-column
-          prop="date"
-          label="日期"
-          width="180">
+          prop="id"
+          label="用户编号">
         </el-table-column>
         <el-table-column
-          prop="name"
-          label="姓名"
-          width="180">
+          prop="username"
+          label="用户名">
         </el-table-column>
         <el-table-column
-          prop="address"
-          label="地址">
+          prop="isEnabled"
+          label="帐户是否可用">
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.isEnabled === 1" size="success">可用</el-tag>
+            <el-tag v-else size="danger">禁用</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="nickName"
+          label="昵称">
+        </el-table-column>
+        <el-table-column
+          prop="mobile"
+          label="注册手机号">
+        </el-table-column>
+        <el-table-column
+          prop="email"
+          label="注册邮箱">
         </el-table-column>
         <el-table-column label="操作" align="center" width="300">
           <template slot-scope="scope">
@@ -66,17 +80,18 @@
       </el-table>
       <el-pagination
         background
-        :current-page="1"
-        :page-size="3"
-        :total="1000"
+        :current-page="searchForm.current"
+        :page-size="searchForm.size"
         layout="prev, pager, next"
         style="padding: 30px 0;text-align: center"
-        @current-change="handleSizeChange">
+        :total="total"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange">
       </el-pagination>
       <el-dialog :title="addTitle" :visible.sync="dialogVisible" width="45%">
         <el-form size="mini" :rules="rules" :inline="true" :model="userForm" ref="form" label-width="80px">
-          <el-form-item label="姓名" prop="loginname">
-            <el-input v-model="userForm.loginname"></el-input>
+          <el-form-item label="用户名" prop="username">
+            <el-input v-model="userForm.username"></el-input>
           </el-form-item>
           <el-form-item label="性别">
             <el-radio-group v-model="userForm.sex">
@@ -84,14 +99,26 @@
               <el-radio :label="1">女</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item label="电话" prop="phone">
-            <el-input v-model="userForm.phone"></el-input>
+          <el-form-item label="电话" prop="mobile">
+            <el-input v-model="userForm.mobile"></el-input>
+          </el-form-item>
+          <el-form-item label="帐户">
+            <el-radio-group v-model="userForm.isEnabled">
+              <el-radio :label="0">禁用</el-radio>
+              <el-radio :label="1">使用</el-radio>
+            </el-radio-group>
           </el-form-item>
           <el-form-item label="登录名" prop="username">
             <el-input v-model="userForm.username"></el-input>
           </el-form-item>
+          <el-form-item label="昵称">
+            <el-input v-model="userForm.nickName"></el-input>
+          </el-form-item>
           <el-form-item label="密码" prop="password">
             <el-input v-model="userForm.password"></el-input>
+          </el-form-item>
+          <el-form-item label="邮箱" prop="email">
+            <el-input v-model="userForm.email"></el-input>
           </el-form-item>
           <el-form-item label="部门" prop="deptName">
             <el-input @click.native="selectDept" v-model="userForm.deptName"></el-input>
@@ -125,7 +152,7 @@
           highlight-current-row>
           <el-table-column
             prop="id"
-            label="序号"
+            label="编号"
             width="180">
           </el-table-column>
           <el-table-column
@@ -148,6 +175,8 @@
 </template>
 <script>
   import tree from "vue-giant-tree"
+  import {getLeftTree} from "@/api/dept/Dept"
+  import {getuserList} from "@/api/user/User"
   export default {
     mounted () {
       this.$nextTick(() => {
@@ -157,8 +186,12 @@
     components:{
       tree
     },
+    created(){
+      this.getdeptTree()
+    },
     data() {
       return {
+        total:0,
         Roletitle:'',
         dialogRoleVisible:false,
         parentDialogtitle:'',
@@ -167,11 +200,6 @@
         addTitle:'',
         dialogVisible:false,
         rules:{
-          loginname:[{
-            required:true,
-            trigger:"change",
-            message:"请输入姓名"
-          }],
           username:[{
             required:true,
             trigger:"change",
@@ -187,109 +215,30 @@
             trigger:"change",
             message:"请选择部门"
           }],
-          phone:[{
+          mobile:[{
             required:true,
             trigger:"change",
             message:"请输入手机号"
+          }],
+          email:[{
+            required:true,
+            trigger:"change",
+            message:"请输入邮箱"
           }]
         },
         userForm: {
           username: "",
           sex:0,
-          loginname: "",
-          phone:"",
+          mobile:"",
           password: "",
           deptId: "",
-          deptName:""
-
+          deptName:"",
+          isEnabled:1,
+          nickName:"",
+          email:""
         },
         tableRoleData: [],
-        Nodes: [
-          {
-            id: "0",
-            pid: "-1",
-            likeId: "0,",
-            parentName: null,
-            manager: null,
-            name: "顶级部门",
-            deptCode: null,
-            deptAddress: null,
-            deptPhone: null,
-            orderNum: null
-          },
-          {
-            id: "1000000362292826",
-            pid: "1000001251633881",
-            likeId: "0,100000177618509910000012516338811000000362292826",
-            parentName: "销售部门",
-            manager: null,
-            name: "销售1",
-            deptCode: "",
-            deptAddress: "",
-            deptPhone: "",
-            orderNum: 0
-          },
-          {
-            id: "1000001251633881",
-            pid: "1000001776185099",
-            likeId: "0,10000017761850991000001251633881",
-            parentName: "秘咖科技有限公司",
-            manager: null,
-            name: "销售部门",
-            deptCode: null,
-            deptAddress: null,
-            deptPhone: null,
-            orderNum: null
-          },
-          {
-            id: "1000001341234088",
-            pid: "1000001776185099",
-            likeId: "0,1000001776185099",
-            parentName: "秘咖网络科技有限公司",
-            manager: null,
-            name: "人才管理部1",
-            deptCode: "RCGL",
-            deptAddress: "",
-            deptPhone: "",
-            orderNum: 0
-          },
-          {
-            id: "1000001620535597",
-            pid: "1000001776185099",
-            likeId: "0,10000017761850991000001620535597",
-            parentName: "秘咖网络科技有限公司",
-            manager: null,
-            name: "软件研发部",
-            deptCode: null,
-            deptAddress: null,
-            deptPhone: null,
-            orderNum: null
-          },
-          {
-            id: "1000001776185099",
-            pid: "0",
-            likeId: "0,1000001776185099",
-            parentName: "顶级部门",
-            manager: null,
-            name: "秘咖网络科技有限公司",
-            deptCode: null,
-            deptAddress: null,
-            deptPhone: null,
-            orderNum: null
-          },
-          {
-            id: "1000002097176073",
-            pid: "1000001776185099",
-            likeId: "0,10000017761850991000002097176073",
-            parentName: "秘咖网络科技有限公司",
-            manager: "464156",
-            name: "售后服务部",
-            deptCode: "SHFWB",
-            deptAddress: "昆明",
-            deptPhone: "18687171906",
-            orderNum: null
-          }
-        ], //上级部门树数据
+        Nodes: [], //上级部门树数据
         //上级部门树配置
         Setting: {
           view: {
@@ -342,47 +291,34 @@
         },
         searchForm:{
           username:'',
-          phone:'',
-          email:''
+          mobile:'',
+          pid:'',
+          current:1,
+          size:3,
+          email:""
         },
         tableHeight:0,
-        tableData: [{
-          date: '2016-05-03',
-          name: '王小虎',
-          address: '上海市普陀区金沙江路 1518 弄'
-        }, {
-          date: '2016-05-02',
-          name: '王小虎',
-          address: '上海市普陀区金沙江路 1518 弄'
-        }, {
-          date: '2016-05-04',
-          name: '王小虎',
-          address: '上海市普陀区金沙江路 1518 弄'
-        }, {
-          date: '2016-05-01',
-          name: '王小虎',
-          address: '上海市普陀区金沙江路 1518 弄'
-        }, {
-          date: '2016-05-08',
-          name: '王小虎',
-          address: '上海市普陀区金沙江路 1518 弄'
-        }, {
-          date: '2016-05-06',
-          name: '王小虎',
-          address: '上海市普陀区金沙江路 1518 弄'
-        }, {
-          date: '2016-05-07',
-          name: '王小虎',
-          address: '上海市普陀区金沙江路 1518 弄'
-        }]
+        tableData: []
       }
     },
     methods:{
+      getList(){
+        getuserList(this.searchForm).then(response=>{
+          this.tableData=response.data.list.records
+          this.searchForm.current=response.data.list.current
+          this.searchForm.size=response.data.list.size
+          this.total=response.data.list.total
+        })
+      },
+      query(){
+        this.getList()
+      },
       handleSizeChange (val) {
         console.log(`每页 ${val} 条`);
       },
       handleCurrentChange (val) {
-        console.log(`当前页: ${val}`);
+        this.searchForm.current=val
+        this.getList();
       },
       handleEdit(index,row){
 
@@ -400,11 +336,21 @@
         this.Roletitle='分配角色'
       },
       ztreeOnClick(evt,treeId,treeNode){
+        this.searchForm.pid=treeNode.id
+        this.getList()
         console.log(treeNode)
       },
-      handleCreated(treeObj){
-        this.ZtreeObj=treeObj
+      handleCreated(treeObj) {
+        this.ZtreeObj = treeObj
         treeObj.expandAll(true)
+        let firstTree = this.ZtreeObj.getNodes()[0];
+        //默认选中第一个
+        this.ZtreeObj.selectNode(firstTree);
+        //加载完自动点击第一个，加载右边表格
+        if (firstTree) {
+          //此处需要判断，否则会报错
+          this.Setting.callback.onClick(null, firstTree.id, firstTree);
+        }
       },
       addUser(){
         this.addTitle='添加用户'
@@ -418,80 +364,9 @@
       selectDept(){
         this.parentDialogtitle='选择部门';
         this.parentDialogVisible = true;
-        this.parentNodes = [
-    {
-      id: "1000000362292826",
-      pid: "1000001251633881",
-      likeId: "0,100000177618509910000012516338811000000362292826",
-      parentName: "销售部门",
-      manager: null,
-      name: "销售1",
-      deptCode: "",
-      deptAddress: "",
-      deptPhone: "",
-      orderNum: 0
-    },
-    {
-      id: "1000001251633881",
-      pid: "1000001776185099",
-      likeId: "0,10000017761850991000001251633881",
-      parentName: "秘咖科技有限公司",
-      manager: null,
-      name: "销售部门",
-      deptCode: null,
-      deptAddress: null,
-      deptPhone: null,
-      orderNum: null
-    },
-    {
-      id: "1000001341234088",
-      pid: "1000001776185099",
-      likeId: "0,1000001776185099",
-      parentName: "秘咖网络科技有限公司",
-      manager: null,
-      name: "人才管理部1",
-      deptCode: "RCGL",
-      deptAddress: "",
-      deptPhone: "",
-      orderNum: 0
-    },
-    {
-      id: "1000001620535597",
-      pid: "1000001776185099",
-      likeId: "0,10000017761850991000001620535597",
-      parentName: "秘咖网络科技有限公司",
-      manager: null,
-      name: "软件研发部",
-      deptCode: null,
-      deptAddress: null,
-      deptPhone: null,
-      orderNum: null
-    },
-    {
-      id: "1000001776185099",
-      pid: "0",
-      likeId: "0,1000001776185099",
-      parentName: "顶级部门",
-      manager: null,
-      name: "秘咖网络科技有限公司",
-      deptCode: null,
-      deptAddress: null,
-      deptPhone: null,
-      orderNum: null
-    },
-    {
-      id: "1000002097176073",
-      pid: "1000001776185099",
-      likeId: "0,10000017761850991000002097176073",
-      parentName: "秘咖网络科技有限公司",
-      manager: "464156",
-      name: "售后服务部",
-      deptCode: "SHFWB",
-      deptAddress: "昆明",
-      deptPhone: "18687171906",
-      orderNum: null
-    }
-  ]
+        getLeftTree().then(response=>{
+          this.parentNodes=response.data.deptList
+        })
       },
       ztreeParentOnClick(evt,treeId,treeNode){
         this.userForm.deptId = treeId;
@@ -512,6 +387,11 @@
         if(this.$refs[FormName]){
           this.$refs[FormName].resetFields();
         }
+      },
+      getdeptTree(){
+        getLeftTree().then(response=>{
+          this.Nodes=response.data.deptList
+        })
       },
     }
   }

@@ -47,8 +47,7 @@
       style="padding: 30px 0;text-align: center"
       :total="total"
       @size-change="handleSizeChange"
-      @current-change="handleCurrentChange"
-    >
+      @current-change="handleCurrentChange">
     </el-pagination>
     <el-dialog
       :title="dialogTitle"
