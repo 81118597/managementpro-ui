@@ -304,6 +304,7 @@
         this.getList();
       },
       addDept() {
+        this.editTag=null
         this.resetForm('addDepartment')
         this.deptDialogTitle = '新增部门';
         this.dialogVisible = true;

@@ -78,8 +78,8 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="上级菜单" prop="parentId">
-          <el-input v-model="addFrom.parentId"  @click.native="selectMenu"></el-input>
+        <el-form-item label="上级菜单" prop="parentName">
+          <el-input v-model="addFrom.parentName"  @click.native="selectMenu"></el-input>
         </el-form-item>
         <el-form-item label="菜单名称" prop="label">
           <el-input v-model="addFrom.label"></el-input>
@@ -239,6 +239,7 @@
         })
       },
       addBtn(){
+        this.editTag=null
         this.addTitle = "新增菜单";
         this.dialogVisible = true;
         this.resetForm("addFrom");
@@ -260,6 +261,7 @@
       selectMenu(){
         this.ParentTitle="上级菜单"
         this.innerVisible=true
+        this.menu()
       },
       updaMenu(){
         this.$refs.addFrom.validate(valid=>{

@@ -93,14 +93,11 @@
           <el-form-item label="用户名" prop="username">
             <el-input v-model="userForm.username"></el-input>
           </el-form-item>
-          <el-form-item label="性别">
-            <el-radio-group v-model="userForm.sex">
-              <el-radio :label="0">男</el-radio>
-              <el-radio :label="1">女</el-radio>
-            </el-radio-group>
-          </el-form-item>
           <el-form-item label="电话" prop="mobile">
             <el-input v-model="userForm.mobile"></el-input>
+          </el-form-item>
+          <el-form-item label="昵称" prop="nickName">
+            <el-input v-model="userForm.nickName"></el-input>
           </el-form-item>
           <el-form-item label="帐户">
             <el-radio-group v-model="userForm.isEnabled">
@@ -108,13 +105,7 @@
               <el-radio :label="1">使用</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item label="登录名" prop="username">
-            <el-input v-model="userForm.username"></el-input>
-          </el-form-item>
-          <el-form-item label="昵称">
-            <el-input v-model="userForm.nickName"></el-input>
-          </el-form-item>
-          <el-form-item label="密码" prop="password">
+          <el-form-item label="密码" prop="password" v-if="VisiblePassword===1">
             <el-input v-model="userForm.password"></el-input>
           </el-form-item>
           <el-form-item label="邮箱" prop="email">
@@ -126,7 +117,7 @@
         </el-form>
         <span slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="addUserPull">确 定</el-button>
+        <el-button type="primary" @click="confirmAll">确 定</el-button>
       </span>
       </el-dialog>
 
@@ -149,6 +140,7 @@
           :data="tableRoleData"
           style="width: 100%"
           @current-change="selectRoleRow"
+          ref="roleTable"
           highlight-current-row>
           <el-table-column
             prop="id"
@@ -156,7 +148,7 @@
             width="180">
           </el-table-column>
           <el-table-column
-            prop="roleName"
+            prop="name"
             label="角色"
             width="180">
           </el-table-column>
@@ -165,9 +157,18 @@
             label="描述">
           </el-table-column>
         </el-table>
+        <el-pagination
+          background
+          :current-page="RoleForm.current"
+          :page-size="RoleForm.size"
+          layout="prev, pager, next"
+          style="padding: 30px 0;text-align: center"
+          :total="RoleForm.total"
+          @current-change="handleRoleCurrentChange">
+        </el-pagination>
         <span slot="footer" class="dialog-footer">
     <el-button @click="dialogRoleVisible = false">取 消</el-button>
-    <el-button type="primary" @click="dialogRoleVisible = false">确 定</el-button>
+    <el-button type="primary" @click="confirmRoleSave">确 定</el-button>
   </span>
       </el-dialog>
     </el-main>
@@ -176,7 +177,8 @@
 <script>
   import tree from "vue-giant-tree"
   import {getLeftTree} from "@/api/dept/Dept"
-  import {getuserList} from "@/api/user/User"
+  import {getuserList,adduser,info,updauser,deluser} from "@/api/user/User"
+  import {getRoleList,getRouleIdByUser,assignRole} from '@/api/role/Role'
   export default {
     mounted () {
       this.$nextTick(() => {
@@ -188,9 +190,11 @@
     },
     created(){
       this.getdeptTree()
+      this.getRoleList();
     },
     data() {
       return {
+        editTag:null,
         total:0,
         Roletitle:'',
         dialogRoleVisible:false,
@@ -199,6 +203,12 @@
         ZtreeObj: null,
         addTitle:'',
         dialogVisible:false,
+        setRoleShow:false,//弹框的显示和影藏
+        currentRow: "", //分配角色表格当前选中行
+        saverole:{
+          roleId:null,
+          userId:null,
+        },
         rules:{
           username:[{
             required:true,
@@ -220,15 +230,14 @@
             trigger:"change",
             message:"请输入手机号"
           }],
-          email:[{
+          nickName:[{
             required:true,
             trigger:"change",
-            message:"请输入邮箱"
-          }]
+            message:"请输入昵称"
+          }],
         },
         userForm: {
           username: "",
-          sex:0,
           mobile:"",
           password: "",
           deptId: "",
@@ -237,6 +246,7 @@
           nickName:"",
           email:""
         },
+        VisiblePassword:0,
         tableRoleData: [],
         Nodes: [], //上级部门树数据
         //上级部门树配置
@@ -297,6 +307,11 @@
           size:3,
           email:""
         },
+        RoleForm:{
+          current:1,
+          size:5,
+          total:0
+        },
         tableHeight:0,
         tableData: []
       }
@@ -310,6 +325,14 @@
           this.total=response.data.list.total
         })
       },
+      getRoleList(){
+        getRoleList(this.RoleForm).then(response=>{
+          this.tableRoleData=response.data.list.records
+          this.RoleForm.total=response.data.list.total
+          this.RoleForm.size=response.data.list.size
+          this.RoleForm.current=response.data.list.current
+        })
+      },
       query(){
         this.getList()
       },
@@ -321,19 +344,42 @@
         this.getList();
       },
       handleEdit(index,row){
-
+        this.VisiblePassword=0
+        this.addTitle='编辑用户'
+        this.editTag=1
+        this.dialogVisible=true
+        this.userinfo(row.id)
+      },
+      userinfo(userId){
+        info(userId).then(response=>{
+          this.userForm=response.data.user
+        })
       },
       handleDelete(index,row){
-
+        this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          deluser(row.id).then(response=>{
+            this.$message({
+              type: 'success',
+              message: '删除成功!'
+            });
+            this.getList()
+          })
+        }).catch(() => {
+          this.$message({
+            type: 'warning',
+            message: '已取消删除'
+          });
+        });
       },
-      assignRole(index,row){
-        this.tableRoleData=[
-          {id:'1',roleName:'超级管理员',remark:"所有权限"},
-          {id:'2',roleName:'系统管理员',remark:"系统"},
-          {id:'3',roleName:'财务管理员',remark:"财务"},
-        ]
-        this.dialogRoleVisible=true
-        this.Roletitle='分配角色'
+      assignRole (index, row) {
+        this.getRouleIdByUser(row.id)
+        this.dialogRoleVisible = true
+        this.Roletitle = '分配角色'
+        this.saverole.userId = row.id
       },
       ztreeOnClick(evt,treeId,treeNode){
         this.searchForm.pid=treeNode.id
@@ -353,6 +399,9 @@
         }
       },
       addUser(){
+        this.VisiblePassword=1
+        this.editTag=null
+        this.userForm.password=''
         this.addTitle='添加用户'
         this.dialogVisible=true
         this.resetForm('form')
@@ -369,17 +418,92 @@
         })
       },
       ztreeParentOnClick(evt,treeId,treeNode){
-        this.userForm.deptId = treeId;
+        this.userForm.deptId = treeNode.id;
         this.userForm.deptName = treeNode.name;
       },
       selectRoleRow(row){
-        console.log(row)
+        this.currentRow=row
+      },
+      confirmRoleSave(){
+        if(!this.currentRow.id){
+          this.$message({
+            type: 'warning',
+            message: '请选择角色'
+          });
+          return;
+        }
+        this.saverole.roleId=this.currentRow.id
+        console.log(this.saverole)
+        assignRole(this.saverole).then(response=>{
+          this.$message({
+            type: 'success',
+            message: '添加成功'
+          });
+          this.$refs.roleTable.setCurrentRow();
+        })
+        this.dialogRoleVisible = false
+      },
+       getRouleIdByUser(userId){
+        getRouleIdByUser(userId).then(response=>{
+          if(!response.data.RoleUser){
+            this.$refs.roleTable.setCurrentRow();
+            this.saverole.roleId=null;
+            return
+          }
+          this.saverole.roleId=response.data.RoleUser.roleId
+          this.$nextTick(function () {
+            for (let i = 0; i < this.tableRoleData.length; i++) {
+              if (this.saverole.roleId === this.tableRoleData[i].id) {
+                this.$refs.roleTable.setCurrentRow(this.tableRoleData[i]);
+                this.currentRow = this.tableRoleData[i];
+              }
+            }
+          })
+        })
+      },
+      confirmAll(){
+        console.log(this.editTag)
+        if(this.editTag){
+          this.updaUserPull()
+        }else{
+          this.addUserPull()
+        }
       },
       addUserPull(){
         const  _this=this;
         this.$refs.form.validate(valid=>{
           if(valid){
-            _this.dialogVisible=false
+            adduser(this.userForm).then(response=>{
+              if(response.code===200){
+                this.$message({
+                  type: 'success',
+                  message: '添加成功!'
+                });
+              }else{
+                this.$message({
+                  type: 'error',
+                  message: '该用户已经存在!'
+                });
+              }
+              this.getList();
+              _this.dialogVisible=false
+            })
+          }
+        })
+      },
+      updaUserPull(){
+        const  _this=this;
+        this.$refs.form.validate(valid=>{
+          if(valid){
+            console.log(this.userForm)
+            updauser(this.userForm).then(response=>{
+              this.$message({
+                type: 'success',
+                message: '修改成功!'
+              });
+              this.getList();
+              _this.dialogVisible=false
+            })
           }
         })
       },
@@ -387,6 +511,10 @@
         if(this.$refs[FormName]){
           this.$refs[FormName].resetFields();
         }
+      },
+      handleRoleCurrentChange(val){
+        this.RoleForm.current=val
+        this.getRoleList()
       },
       getdeptTree(){
         getLeftTree().then(response=>{

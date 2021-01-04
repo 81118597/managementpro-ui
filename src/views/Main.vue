@@ -13,7 +13,7 @@
               <img src="../assets/img/20201218102109.jpg">
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item icon="el-icon-house">系统首页</el-dropdown-item>
-                  <el-dropdown-item icon="el-icon-switch-button">退出登录</el-dropdown-item>
+                  <el-dropdown-item icon="el-icon-switch-button" @click.native="logout">退出登录</el-dropdown-item>
                 </el-dropdown-menu>
             </el-dropdown>
         </div>
@@ -40,6 +40,8 @@
 import MenuBar from '@/components/MenuBar.vue'
 import Tabs from '@/components/tabs.vue'
 import { mapState } from 'vuex'
+import {logout} from "@/api/user/User"
+import Cookies from 'js-cookie'
 export default {
   computed: {
     ...mapState({
@@ -59,6 +61,20 @@ export default {
   methods: {
     iconClick () {
       this.$store.commit('setOpenOrClose')
+    },
+    logout(){
+      this.$confirm('确定注销并退出系统吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        logout().then(response=>{
+          console.log(response)
+          sessionStorage.clear();
+          window.location.href="/login"
+          Cookies.remove('token')
+        })
+      })
     }
   }
 }

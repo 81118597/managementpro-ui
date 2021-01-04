@@ -33,3 +33,30 @@ export function delrole (roleId) {
     method: 'delete',
   })
 }
+export function getRouleIdByUser (userId) {
+  return request({
+    url: `api/role/getRouleIdByUser/${userId}`,
+    method: 'get',
+  })
+}
+export function assignRoleMenu (UserRole) {
+  return request({
+    url: `api/menu/saveAssignRole`,
+    method: 'post',
+    data:UserRole
+  })
+}
+export function assignRole (userRole) {
+  return request({
+    url: `api/role/assignRole`,
+    method: 'post',
+    data:userRole
+  })
+}
+export function MenuTree (RoleMenuQuery) {
+  return request({
+    url: `api/menu/MenuTree`,
+    method: 'post',
+    data:RoleMenuQuery
+  })
+}

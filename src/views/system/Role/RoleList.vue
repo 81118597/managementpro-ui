@@ -82,14 +82,14 @@
       />
       <span slot="footer" class="dialog-footer">
     <el-button @click="Visible = false">取 消</el-button>
-    <el-button type="primary" @click="dialogVisible = false">确 定</el-button>
+    <el-button type="primary" @click="saveAssign">确 定</el-button>
   </span>
     </el-dialog>
   </el-main>
 </template>
 <script>
 import tree from "vue-giant-tree";
-import {getRoleList,addrole,selectById,updarole,delrole} from '@/api/role/Role'
+import {getRoleList,addrole,selectById,updarole,delrole,MenuTree,assignRole,assignRoleMenu} from '@/api/role/Role'
 export default {
   components:{
     tree
@@ -145,13 +145,15 @@ export default {
       Visible:false,
       dialogTitle:'',
       dialogVisible: false,
+      roleId:null,
       addRoleForm:{
         name:'',
         remark:''
       },
       treeDatas:[],
       tableHeight: window.innerHeight,
-      tableData: []
+      tableData: [],
+      checkMenu:[]
     }
   },
   created(){
@@ -172,6 +174,7 @@ export default {
     },
 
     openAddRole(){
+      this.editTag=null
       this.resetForm('addRole')
       this.dialogTitle="新增角色"
       this.dialogVisible=true
@@ -225,182 +228,15 @@ export default {
       })
     },
     assignRole(row){
-      this.dialogTitle="分配权限"
-      this.treeDatas = [{
-        "id": 17,
-        "pid": 0,
-        "name": "系统管理",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 18,
-        "pid": 17,
-        "name": "用户管理",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 20,
-        "pid": 18,
-        "name": "新增",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 21,
-        "pid": 18,
-        "name": "修改",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 22,
-        "pid": 18,
-        "name": "删除",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 23,
-        "pid": 17,
-        "name": "角色管理",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 25,
-        "pid": 23,
-        "name": "新增",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 26,
-        "pid": 23,
-        "name": "修改",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 27,
-        "pid": 23,
-        "name": "删除",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 28,
-        "pid": 17,
-        "name": "权限管理",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 30,
-        "pid": 28,
-        "name": "新增",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 31,
-        "pid": 28,
-        "name": "修改",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 32,
-        "pid": 28,
-        "name": "删除",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 33,
-        "pid": 17,
-        "name": "机构管理",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 34,
-        "pid": 0,
-        "name": "商品管理",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 36,
-        "pid": 34,
-        "name": "分类管理",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 37,
-        "pid": 34,
-        "name": "品牌管理",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 38,
-        "pid": 36,
-        "name": "新增",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 39,
-        "pid": 36,
-        "name": "编辑",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 40,
-        "pid": 37,
-        "name": "新增",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 41,
-        "pid": 37,
-        "name": "编辑",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 42,
-        "pid": 0,
-        "name": "系统工具",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 43,
-        "pid": 42,
-        "name": "代码生成",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 46,
-        "pid": 33,
-        "name": "新增",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 76,
-        "pid": 33,
-        "name": "编辑",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 77,
-        "pid": 42,
-        "name": "接口文档",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 78,
-        "pid": 33,
-        "name": "删除",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 79,
-        "pid": 23,
-        "name": "分配权限",
-        "open": null,
-        "checked": true
-      }, {
-        "id": 80,
-        "pid": 18,
-        "name": "分配角色",
-        "open": null,
-        "checked": true
-      }];
+      this.dialogTitle="为"+row.name+"分配权限"
+      this.roleId=row.id
+      let parm={
+        userId:sessionStorage.getItem('userId'),
+        roleId:row.id
+      }
+      MenuTree(parm).then(response=>{
+        this.treeDatas=response.data.treeVos
+      })
       this.Visible=true
     },
     deleteRole(row){
@@ -440,7 +276,28 @@ export default {
       },
     //获取选择的权限
     ztreeOnCheck(){
-
+      let checked=this.ztreeObj.getCheckedNodes(tree)
+      this.checkMenu=checked
+    },
+    saveAssign(){
+      if(this.checkMenu.length<1){
+        this.$message({
+          type: 'error',
+          message: '请勾选权限!'
+        });
+        return;
+      }
+      let parm={
+        list:this.checkMenu,
+        roleId:this.roleId
+      }
+      assignRoleMenu(parm).then(response=>{
+        this.$message({
+          type: 'success',
+          message: '添加成功!'
+        });
+        this.Visible=false
+      })
     },
     handleCreated: function(ztreeObj) {
       this.ztreeObj = ztreeObj;

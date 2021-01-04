@@ -85,6 +85,7 @@ export default {
               if(response.code==200){
                 sessionStorage.setItem('menuList',JSON.stringify(response.data.menuList))
                 sessionStorage.setItem('routerList', JSON.stringify(response.data.routerList))
+                sessionStorage.setItem('userId', JSON.stringify(response.data.userId))
                 Cookies.set("token",response.data.token)
                 this.$router.push('/desktop')
               }else{
