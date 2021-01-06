@@ -26,7 +26,7 @@
             </el-form-item>
           </el-col>
           <el-button style="margin-left:20px;" size="mini" type="primary" icon="el-icon-search" @click="query">查询</el-button>
-          <el-button size="mini" type="primary" icon="el-icon-plus" @click="addUser">新增</el-button>
+          <el-button size="mini" type="primary" icon="el-icon-plus" @click="addUser" v-if='hasPerm("sys:user:add")'>新增</el-button>
         </el-row>
       </el-form>
       <el-table
@@ -66,15 +66,15 @@
           <template slot-scope="scope">
             <el-button
               size="mini"
-              @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
+              @click="handleEdit(scope.$index, scope.row)" v-if='hasPerm("sys:user:edit")'>编辑</el-button>
             <el-button
               type="success"
-              @click="assignRole(scope.$index,scope.row)"
+              @click="assignRole(scope.$index,scope.row)" v-if='hasPerm("sys:user:assign")'
               size="mini">分配角色</el-button>
             <el-button
               size="mini"
               type="danger"
-              @click="handleDelete(scope.$index, scope.row)">删除</el-button>
+              @click="handleDelete(scope.$index, scope.row)"  v-if='hasPerm("sys:user:delete")'>删除</el-button>
           </template>
         </el-table-column>
       </el-table>

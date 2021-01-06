@@ -19,7 +19,7 @@
           type="primary"
           @click="searBtn"
         >搜索</el-button>
-        <el-button size="mini" icon="el-icon-plus" type="primary" @click="addBtn">新增</el-button>
+        <el-button size="mini" icon="el-icon-plus" type="primary" @click="addBtn"  v-if='hasPerm("sys:menu:add")'>新增</el-button>
       </el-row>
     </el-form>
 
@@ -52,11 +52,11 @@
         <template slot-scope="scope">
           <el-button
             size="mini"
-            @click="editMenu(scope.row)">编辑</el-button>
+            @click="editMenu(scope.row)" v-if='hasPerm("sys:menu:edit")'>编辑</el-button>
           <el-button
             size="mini"
             type="danger"
-            @click="handleDelete(scope.row)">删除</el-button>
+            @click="handleDelete(scope.row)" v-if='hasPerm("sys:menu:delete")'>删除</el-button>
         </template>
       </el-table-column>
     </el-table>

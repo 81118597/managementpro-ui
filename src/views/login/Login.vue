@@ -10,10 +10,10 @@
         <div>
           <el-form  :model="LoginForm"  :rules="rules" ref="LoginForm" label-width="0px" class="Login_Form">
             <el-form-item prop="username">
-              <el-input v-model="LoginForm.username" name="username" prefix-icon="el-icon-user-solid"></el-input>
+              <el-input v-model="LoginForm.username" name="username"  prefix-icon="el-icon-user-solid"></el-input>
             </el-form-item>
             <el-form-item  prop="password">
-              <el-input  type="password" v-model="LoginForm.password" name="password" prefix-icon="el-icon-lock"></el-input>
+              <el-input  type="password" v-model="LoginForm.password"  name="password" prefix-icon="el-icon-lock"></el-input>
             </el-form-item>
             <el-form-item  prop="verification">
               <div class="verification_box">
@@ -86,6 +86,7 @@ export default {
                 sessionStorage.setItem('menuList',JSON.stringify(response.data.menuList))
                 sessionStorage.setItem('routerList', JSON.stringify(response.data.routerList))
                 sessionStorage.setItem('userId', JSON.stringify(response.data.userId))
+                sessionStorage.setItem('code', JSON.stringify(response.data.code))
                 Cookies.set("token",response.data.token)
                 this.$router.push('/desktop')
               }else{

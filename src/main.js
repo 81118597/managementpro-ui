@@ -8,6 +8,8 @@ import './assets/css/global.css'
 import axios from 'axios'
 import Fragment from 'vue-fragment'
 import Cookies from 'js-cookie'
+import menu from '@/menu/index'
+Vue.prototype.hasPerm=menu
 Vue.config.productionTip = false
 axios.defaults.withCredentials = true
 Vue.use(ElementUI)

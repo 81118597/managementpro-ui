@@ -9,7 +9,7 @@
           </el-form-item>
         </el-col>
         <el-button class="bth-left" size="small" type="primary" icon="el-icon-search" @click="query">查询</el-button>
-        <el-button size="small " type="primary" icon="el-icon-plus" @click="openAddRole">新增</el-button>
+        <el-button size="small " type="primary" icon="el-icon-plus" @click="openAddRole" v-if='hasPerm("sys:role:add")'>新增</el-button>
       </el-row>
     </el-form>
     <el-table
@@ -33,9 +33,9 @@
       </el-table-column>
       <el-table-column label="操作" width="300" align="center">
         <template slot-scope="scope">
-          <el-button type="primary" @click="editRole(scope.row)" size="mini">编辑</el-button>
-          <el-button type="success" @click="assignRole(scope.row)" size="mini">分配权限</el-button>
-          <el-button type="danger" @click="deleteRole(scope.row)" size="mini">删除</el-button>
+          <el-button type="primary" @click="editRole(scope.row)" size="mini" v-if='hasPerm("sys:role:edit")'>编辑</el-button>
+          <el-button type="success" @click="assignRole(scope.row)" size="mini" v-if='hasPerm("sys:role:assign")'>分配权限</el-button>
+          <el-button type="danger" @click="deleteRole(scope.row)" size="mini" v-if='hasPerm("sys:role:delete")'>删除</el-button>
         </template>
       </el-table-column>
     </el-table>
