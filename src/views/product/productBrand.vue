@@ -3,7 +3,7 @@
     <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
       <el-form-item label="产品id" prop="SecondaryDirectory">
         <el-col :span="6">
-          <el-input v-model="ruleForm.SecondaryDirectory" :disabled="true"></el-input>
+          <el-input v-model="ruleForm.SecondaryDirectory"></el-input>
         </el-col>
       </el-form-item>
       <el-form-item label="二级目录" prop="SecondaryDirectory">
@@ -148,21 +148,78 @@
         <el-col :span="4"><div class="grid-content bg-purple">操作</div></el-col>
       </el-row>
       <el-form-item  prop="SecondaryDirectory" label-width="0" v-for="(domain,index) in ruleForm.domains"
-      :key="index">
+      :key="domain.key">
         <el-row :gutter="20">
-          <el-col :span="4"><el-input v-model="ruleForm.attributeId" :disabled="true"></el-input></el-col>
-          <el-col :span="4"><el-input v-model="ruleForm.AttributeGroup"></el-input></el-col>
-          <el-col :span="4"><el-input v-model="ruleForm.attributeName"></el-input></el-col>
-          <el-col :span="4"><el-input v-model="ruleForm.price"></el-input></el-col>
-          <el-col :span="4"><el-input v-model="ruleForm.price"></el-input></el-col>
+          <el-col :span="4"><el-input v-model="domain.attributeId" :disabled="true"></el-input></el-col>
+          <el-col :span="4"><el-input v-model="domain.AttributeGroup"></el-input></el-col>
+          <el-col :span="4"><el-input v-model="domain.attributeName"></el-input></el-col>
+          <el-col :span="4"><el-input v-model="domain.price"></el-input></el-col>
+          <el-col :span="4"><el-input v-model="domain.price"></el-input></el-col>
           <el-col :span="4"><el-button type="success"  @click="dialogVisible = true">附件</el-button><el-button type="danger"  @click.prevent="removeDomain(domain)">删除属性</el-button></el-col>
         </el-row>
       </el-form-item>
       <el-row :gutter="20">
       <el-button type="primary" @click="addDomain">添加属性</el-button>
       </el-row>
-      <el-form-item label="套餐" prop="desc">
-        <div style="border: #d3dce6 solid;width: 930px;height: 600px"></div>
+      <el-form-item label="套餐" prop="desc" v-for="(pack,index) in ruleForm.package"
+                    :key="index">
+        <div style="border: #d3dce6 solid;padding-bottom: 60px">
+
+          <el-form-item  prop="SecondaryDirectory" label-width="0">
+            <el-form-item label="套餐名称" prop="SecondaryDirectory" style="margin-top: 30px">
+              <el-col :span="8">
+                <el-input v-model="ruleForm.name"></el-input>
+              </el-col>
+            </el-form-item>
+            <el-form-item label="价格" prop="SecondaryDirectory" style="margin-top: 30px">
+              <el-col :span="8">
+                <el-input v-model="ruleForm.price"></el-input>
+              </el-col>
+              <el-col :span="15">
+                <el-button type="danger" @click="delpackage(pack)" style="float: right">删除属性</el-button>
+              </el-col>
+            </el-form-item>
+          </el-form-item>
+            <el-form-item prop="SecondaryDirectory" style="margin-top: 20px" v-for="(packpro,index) in ruleForm.packageproduct"
+                          :key="index">
+            <el-row :gutter="20">
+              <el-col :span="5"><div class="grid-content bg-purple">产品名称</div></el-col>
+              <el-col :span="4"><div class="grid-content bg-purple">产品外文名称</div></el-col>
+              <el-col :span="4"><div class="grid-content bg-purple">产品数量</div></el-col>
+              <el-col :span="4"><div class="grid-content bg-purple">产品id</div></el-col>
+              <el-col :span="7"><div class="grid-content bg-purple">操作</div></el-col>
+            </el-row>
+              <el-row :gutter="20">
+                <el-col :span="5"><el-input v-model="ruleForm.name"></el-input></el-col>
+                <el-col :span="4"><el-input v-model="ruleForm.products"></el-input></el-col>
+                <el-col :span="4"><el-input v-model="ruleForm.number"></el-input></el-col>
+                <el-col :span="4"><el-input v-model="ruleForm.packageId" :disabled="true"></el-input></el-col>
+                <el-col :span="7"><el-button type="success" @click.prevent="addpackageproduct">添加产品</el-button>
+                  <el-button type="danger"  @click.prevent="removepackageproduct(packpro)">删除产品</el-button>
+                  <el-button type="primary">选择产品</el-button>
+                </el-col>
+              </el-row>
+          </el-form-item>
+        </div>
+      </el-form-item>
+      <el-row :gutter="20">
+        <el-button type="primary" @click="addpackage">添加套餐</el-button>
+      </el-row>
+      <el-form-item label="FB通用像素id" prop="SecondaryDirectory">
+        <el-col :span="20">
+          <el-input v-model="ruleForm.SecondaryDirectory"></el-input>
+        </el-col>
+      </el-form-item>
+      <el-form-item label="内容" prop="SecondaryDirectory">
+        <el-col :span="20">
+          <tinymce
+            id="editor"
+            ref="editor"
+            v-model="content"
+            :height="realHeight"
+            @handleImgUpload="imgUpload"
+          />
+        </el-col>
       </el-form-item>
       <el-form-item label="特殊资源" prop="resource">
         <el-radio-group v-model="ruleForm.resource">
@@ -201,9 +258,19 @@
   </div>
 </template>
 <script>
+  import tinymce from '@/components/tinymce'
   export default {
+    components:{
+      tinymce
+    },
+    computed:{
+      realHeight() {
+        return (window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight) - 200
+      }
+    },
     data() {
       return {
+        value: '', //富文本的内容
         ruleForm: {
           name: '',
           region: '',
@@ -221,6 +288,17 @@
             price:'',
             picture:'',
             productId:''
+          }],
+          package:[{
+            name:'',
+            price:'',
+            picture:'',
+          }],
+          packageproduct:[{
+            name:'',
+            products:'',
+            number:'',
+            packageId:''
           }]
           //--------------------
         },
@@ -258,6 +336,18 @@
       };
     },
     methods: {
+      async imgUpload(blobInfo, success, failure) {
+        const formData = new FormData();
+        formData.append('file', blobInfo.blob());
+        try {
+          const res = await uploadFile(formData);
+          success(this.server + res);
+          console.log(this.server + res);
+        } catch (e) {
+          console.log(e);
+          failure('上传失败:' + e);
+        }
+      },
       submitForm(formName) {
         this.$refs[formName].validate((valid) => {
           if (valid) {
@@ -270,9 +360,39 @@
       },
       addDomain(){
         this.ruleForm.domains.push({
+          attributeId:'',
+          AttributeGroup:'',
+          attributeName:'',
+          price:'',
+          picture:'',
+          productId:'',
+          key: Date.now()
+        });
+      },
+      addpackageproduct(){
+        this.ruleForm.packageproduct.push({
           value: '',
           key: Date.now()
         });
+      },
+      addpackage(){
+        this.ruleForm.package.push({
+          value: '',
+          key: Date.now()
+        });
+      },
+
+      removepackageproduct(item){
+        var index = this.ruleForm.packageproduct.indexOf(item)
+        if (index !== -1) {
+          this.ruleForm.packageproduct.splice(index, 1)
+        }
+      },
+      delpackage(item){
+        var index = this.ruleForm.package.indexOf(item)
+        if (index !== -1) {
+          this.ruleForm.package.splice(index, 1)
+        }
       },
       removeDomain(item){
         var index = this.ruleForm.domains.indexOf(item)
@@ -291,7 +411,7 @@
       },
       handleClose(done) {
             done();
-      }
+      },
     }
   }
 </script>

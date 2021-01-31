@@ -2,14 +2,14 @@ import axios from 'axios'
 import Cookies from 'js-cookie'
 import { Notification, MessageBox, Message } from 'element-ui'
 const instance = axios.create({
-  baseURL: 'http://localhost:80',
+  baseURL: 'http://47.113.102.7:88',
   timeout: 10000
 })
 instance.interceptors.request.use(
   config => {
     //debugger
     if (Cookies.get('token')) {
-      config.headers['token'] = Cookies.get('token');
+      config.headers['Authorization'] = Cookies.get('token');
     }
     return config;
   },
